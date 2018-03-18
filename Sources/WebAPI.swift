@@ -1103,6 +1103,43 @@ extension WebAPI {
 
 // MARK: - Conversations
 extension WebAPI {
+    public func conversationsHistory(
+        channel: String,
+        cursor: String? = nil,
+        latest: String? = nil,
+        oldest: String? = nil,
+        inclusive: Bool? = nil,
+        limit: Int? = nil,
+        success: (([SKCore.Message]?, Int?, String?) -> Void)?,
+        failure: FailureClosure?
+    ) {
+        var parameters: [String: Any] = [
+            "token": token,
+            "channel": channel,
+        ]
+        if let cursor = cursor {
+            parameters["cursor"] = cursor
+        }
+        if let latest = latest {
+            parameters["latest"] = latest
+        }
+        if let oldest = oldest {
+            parameters["oldest"] = oldest
+        }
+        if let inclusive = inclusive {
+            parameters["inclusive"] = inclusive
+        }
+        if let limit = limit {
+            parameters["limit"] = limit
+        }
+        networkInterface.request(.conversationsHistory, parameters: parameters, successClosure: {(response) in
+            let messages = (response["messages"] as? [[String: Any]])?.map({ SKCore.Message(dictionary: $0) })
+            success?(messages, response["pin_count"] as? Int, (response["response_metadata"] as? [String: Any])?["next_cursor"] as? String)
+        }) {(error) in
+            failure?(error)
+        }
+    }
+
     public func conversationsList(
         excludeArchived: Bool = false,
         cursor: String? = nil,
