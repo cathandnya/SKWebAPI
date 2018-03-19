@@ -1110,7 +1110,7 @@ extension WebAPI {
         oldest: String? = nil,
         inclusive: Bool? = nil,
         limit: Int? = nil,
-        success: (([SKCore.Message]?, Int?, String?) -> Void)?,
+        success: (([[String: Any]]?, Int?, String?) -> Void)?,
         failure: FailureClosure?
     ) {
         var parameters: [String: Any] = [
@@ -1133,8 +1133,15 @@ extension WebAPI {
             parameters["limit"] = limit
         }
         networkInterface.request(.conversationsHistory, parameters: parameters, successClosure: {(response) in
-            let messages = (response["messages"] as? [[String: Any]])?.map({ SKCore.Message(dictionary: $0) })
-            success?(messages, response["pin_count"] as? Int, (response["response_metadata"] as? [String: Any])?["next_cursor"] as? String)
+            var nextCursor: String?
+            if response["has_more"] as? Bool ?? false {
+                nextCursor = (response["response_metadata"] as? [String: Any])?["next_cursor"] as? String
+            }
+            success?(
+                response["messages"] as? [[String: Any]],
+                response["pin_count"] as? Int,
+                nextCursor
+            )
         }) {(error) in
             failure?(error)
         }
